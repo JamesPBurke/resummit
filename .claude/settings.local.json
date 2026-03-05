@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo $SHELL)",
+      "Bash(echo $0)",
+      "Bash(~/.bashrc)",
+      "Bash(source ~/.bashrc)",
+      "Bash(echo $CLAUDE_CODE_MAX_OUTPUT_TOKENS)"
+    ]
+  }
+}

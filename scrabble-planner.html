@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Scrabble Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Cell size: responsive between 22px and 38px */
+      --cell: clamp(22px, 5.8vw, 38px);
+      --radius: 6px;
+    }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #2c5f3a;
+      min-height: 100vh;
+      padding: 14px 8px 36px;
+      color: #f0dfa0;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: clamp(18px, 5vw, 28px);
+      letter-spacing: 4px;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.55);
+      margin-bottom: 16px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* ── Panels ────────────────────────────────────────────── */
+    .panel {
+      background: rgba(0,0,0,0.22);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title {
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(240,223,160,0.65);
+      margin-bottom: 8px;
+    }
+
+    /* ── Encoding Input ────────────────────────────────────── */
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      background: rgba(0,0,0,0.3);
+      color: #f0dfa0;
+      border: 1px solid rgba(240,223,160,0.22);
+      border-radius: 4px;
+      padding: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    textarea:focus { outline: 1px solid rgba(240,223,160,0.5); }
+    textarea::placeholder { color: rgba(240,223,160,0.28); }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      padding: 7px 14px;
+      border: none;
+      border-radius: 4px;
+      font-family: Georgia, serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: filter 0.1s, transform 0.1s;
+      line-height: 1;
+    }
+    button:hover  { filter: brightness(1.12); }
+    button:active { transform: scale(0.97); }
+
+    .btn-primary   { background: #f0dfa0; color: #2c1810; font-weight: bold; }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: #f0dfa0; }
+
+    .hint {
+      font-size: 11px;
+      font-style: italic;
+      color: rgba(240,223,160,0.38);
+      margin-top: 7px;
+      line-height: 1.6;
+    }
+    .hint code {
+      font-family: 'Courier New', monospace;
+      color: rgba(240,223,160,0.55);
+      font-style: normal;
+    }
+
+    .error-msg { font-size: 12px; color: #ff9b9b; margin-top: 6px; min-height: 18px; }
+
+    /* ── Board ─────────────────────────────────────────────── */
+    .board-scroll {
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #board-grid {
+      display: grid;
+      /* label col + 15 cell cols */
+      grid-template-columns: calc(var(--cell) * 0.72) repeat(15, var(--cell));
+      /* label row + 15 cell rows */
+      grid-template-rows: calc(var(--cell) * 0.62) repeat(15, var(--cell));
+      gap: 1px;
+      background: #163d22;
+      border: 2px solid #163d22;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* Labels */
+    .lbl {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2c5f3a;
+      color: rgba(240,223,160,0.5);
+      font-size: clamp(7px, 1.3vw, 11px);
+      font-weight: bold;
+      font-family: Georgia, serif;
+    }
+
+    /* Cells */
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #52a86a;
+      user-select: none;
+    }
+
+    /* Bonus square colours */
+    .cell.tw   { background: #bf2d1d; }
+    .cell.dw   { background: #e8a0a0; }
+    .cell.tl   { background: #2158c4; }
+    .cell.dl   { background: #8ec4f0; }
+    .cell.star { background: #e8a0a0; } /* center = DW + star */
+
+    .bonus-txt {
+      font-size: clamp(4px, calc(var(--cell) * 0.165), 7px);
+      font-weight: 900;
+      line-height: 1.2;
+      text-align: center;
+      pointer-events: none;
+      letter-spacing: -0.3px;
+    }
+    .cell.tw   .bonus-txt { color: #fff; }
+    .cell.dw   .bonus-txt { color: #7a0000; }
+    .cell.tl   .bonus-txt { color: #fff; }
+    .cell.dl   .bonus-txt { color: #00005a; }
+    .cell.star .bonus-txt {
+      color: #7a0000;
+      font-size: clamp(8px, calc(var(--cell) * 0.4), 18px);
+    }
+
+    /* ── Tiles (on board) ──────────────────────────────────── */
+    .tile {
+      position: absolute;
+      inset: 1px;
+      background: #f5e6b0;
+      border-radius: 2px;
+      border: 1px solid #b8860b;
+      box-shadow: inset -1px -1px 0 rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .tile.blank { background: #f0ead8; }
+
+    .tile-l {
+      font-size: clamp(9px, calc(var(--cell) * 0.43), 17px);
+      font-weight: bold;
+      color: #1a0e00;
+      line-height: 1;
+    }
+    .tile.blank .tile-l { color: #999; }
+
+    .tile-v {
+      position: absolute;
+      bottom: 1px;
+      right: 2px;
+      font-size: clamp(4px, calc(var(--cell) * 0.19), 8px);
+      color: #5a3a10;
+      line-height: 1;
+    }
+
+    /* ── Rack ──────────────────────────────────────────────── */
+    .rack-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      background: #7a5c00;
+      border: 3px solid #5a4000;
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      min-height: calc(var(--cell) + 24px);
+    }
+
+    .rack-tile {
+      width: calc(var(--cell) + 6px);
+      height: calc(var(--cell) + 6px);
+      background: #f5e6b0;
+      border: 2px solid #b8860b;
+      box-shadow: 2px 2px 0 #5a4000;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: grab;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .rack-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 2px 4px 0 #5a4000;
+    }
+    .rack-tile:active { cursor: grabbing; }
+    .rack-tile.blank { background: #f0ead8; }
+
+    .rack-tile .tile-l {
+      font-size: clamp(13px, calc(var(--cell) * 0.52), 20px);
+      font-weight: bold;
+      color: #1a0e00;
+      line-height: 1;
+    }
+    .rack-tile.blank .tile-l { color: #999; }
+
+    .rack-tile .tile-v {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: clamp(6px, calc(var(--cell) * 0.23), 10px);
+      color: #5a3a10;
+      line-height: 1;
+    }
+
+    .empty-hint {
+      color: rgba(245,230,176,0.38);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* ── Score Preview ─────────────────────────────────────── */
+    .score-placeholder {
+      color: rgba(240,223,160,0.38);
+      font-style: italic;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>SCRABBLE PLANNER</h1>
+
+  <!-- Encoding Input -->
+  <div class="panel">
+    <div class="panel-title">Board Encoding</div>
+    <textarea id="enc"
+      placeholder="BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8&#10;RACK: AEINRST"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary"   onclick="loadEncoding()">Load Board</button>
+      <button class="btn-secondary" onclick="loadExample()">Example</button>
+      <button class="btn-secondary" onclick="clearAll()">Clear</button>
+    </div>
+    <p class="hint">
+      Format: <code>BOARD: A@A-1, b@B-2 &nbsp; RACK: ABCDE?G</code><br>
+      Column A–O · Row 1–15 · lowercase letter on board = blank played as that letter · ? in rack = unused blank
+    </p>
+    <p class="error-msg" id="err"></p>
+  </div>
+
+  <!-- Board -->
+  <div class="board-scroll">
+    <div id="board-grid"></div>
+  </div>
+
+  <!-- Rack -->
+  <div class="panel">
+    <div class="panel-title">Your Rack</div>
+    <div class="rack-bar" id="rack">
+      <span class="empty-hint">Load an encoding to see your tiles</span>
+    </div>
+  </div>
+
+  <!-- Score (populated in later milestone) -->
+  <div class="panel">
+    <div class="panel-title">Score Preview</div>
+    <p class="score-placeholder" id="score-display">
+      Place tiles on the board to calculate your turn score
+    </p>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const TILE_VALUES = {
+  A:1, B:3, C:3, D:2, E:1, F:4, G:2, H:4, I:1, J:8,
+  K:5, L:1, M:3, N:1, O:1, P:3, Q:10, R:1, S:1, T:1,
+  U:1, V:4, W:4, X:8, Y:4, Z:10, '?':0
+};
+
+const COLS = 'ABCDEFGHIJKLMNO';
+
+// Build bonus lookup: "r,c" → 'TW' | 'DW' | 'TL' | 'DL'
+const BONUS_MAP = (() => {
+  const m = new Map();
+  const d = {
+    TW: [[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]],
+    DW: [[1,1],[1,13],[2,2],[2,12],[3,3],[3,11],[4,4],[4,10],[7,7],
+         [10,4],[10,10],[11,3],[11,11],[12,2],[12,12],[13,1],[13,13]],
+    TL: [[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],
+         [9,1],[9,5],[9,9],[9,13],[13,5],[13,9]],
+    DL: [[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],
+         [6,2],[6,6],[6,8],[6,12],[7,3],[7,11],
+         [8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],
+         [12,6],[12,8],[14,3],[14,11]]
+  };
+  for (const [type, coords] of Object.entries(d))
+    for (const [r, c] of coords) m.set(`${r},${c}`, type);
+  return m;
+})();
+
+const EXAMPLE_ENC = `BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8, W@H-6, O@H-7, R@H-9, L@H-10, D@H-11
+RACK: AEINRST`;
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+// boardCells[r][c] = { letter, isBlank, isStatic } | null
+const boardCells = Array.from({length: 15}, () => Array(15).fill(null));
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+// ── Parsing ──────────────────────────────────────────────────────────────────
+
+function parseEncoding(raw) {
+  const errs = [];
+
+  // Split on BOARD: and RACK: headers (case-insensitive)
+  const boardMatch = raw.match(/BOARD\s*:\s*([\s\S]*?)(?=RACK\s*:|$)/i);
+  const rackMatch  = raw.match(/RACK\s*:\s*([A-Za-z?]*)/i);
+
+  const boardTiles = [];
+  if (boardMatch?.[1]?.trim()) {
+    for (const tok of boardMatch[1].split(',')) {
+      const t = tok.trim();
+      if (!t) continue;
+      // Accept: LETTER@COL-ROW  e.g. H@D-8 or h@d-8
+      const m = t.match(/^([A-Za-z])@([A-Oa-o])-(\d{1,2})$/);
+      if (!m) { errs.push(`Invalid token: "${t}"`); continue; }
+      const letter  = m[1];
+      const col     = m[2].toUpperCase().charCodeAt(0) - 65; // 0–14
+      const row     = parseInt(m[3], 10) - 1;                // 0–14
+      if (row < 0 || row > 14) { errs.push(`Row out of range in "${t}"`); continue; }
+      // Lowercase letter on board means blank played as that letter
+      const isBlank = letter !== letter.toUpperCase();
+      boardTiles.push({ letter: letter.toUpperCase(), col, row, isBlank });
+    }
+  }
+
+  const rackTiles = [];
+  if (rackMatch?.[1]) {
+    for (const ch of rackMatch[1]) {
+      const isBlank = ch === '?';
+      const letter  = isBlank ? '?' : ch.toUpperCase();
+      rackTiles.push({ letter, isBlank });
+    }
+  }
+
+  return { boardTiles, rackTiles, errs };
+}
+
+// ── Board Rendering ───────────────────────────────────────────────────────────
+
+function buildBoard() {
+  const grid = document.getElementById('board-grid');
+  grid.innerHTML = '';
+
+  // ── Row 0: corner + column labels ──
+  grid.appendChild(el('div', 'lbl')); // empty corner
+  for (const ch of COLS) {
+    grid.appendChild(el('div', 'lbl', ch));
+  }
+
+  // ── Rows 1–15: row label + 15 cells ──
+  for (let r = 0; r < 15; r++) {
+    grid.appendChild(el('div', 'lbl', String(r + 1)));
+
+    for (let c = 0; c < 15; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = `cell-${r}-${c}`;
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      const isCenter = r === 7 && c === 7;
+      const bonus    = BONUS_MAP.get(`${r},${c}`);
+
+      if (isCenter) {
+        cell.classList.add('star');
+        cell.appendChild(el('span', 'bonus-txt', '★'));
+      } else if (bonus) {
+        cell.classList.add(bonus.toLowerCase());
+        const labels = { TW: '3W', DW: '2W', TL: '3L', DL: '2L' };
+        cell.appendChild(el('span', 'bonus-txt', labels[bonus]));
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function placeTileOnCell(r, c, { letter, isBlank }) {
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  if (!cell) return;
+
+  // Hide bonus label so the tile covers it cleanly
+  const bonusTxt = cell.querySelector('.bonus-txt');
+  if (bonusTxt) bonusTxt.style.visibility = 'hidden';
+
+  const tile = el('div', 'tile' + (isBlank ? ' blank' : ''));
+  tile.appendChild(el('span', 'tile-l', letter));
+  if (!isBlank) {
+    const val = TILE_VALUES[letter] ?? 0;
+    tile.appendChild(el('span', 'tile-v', String(val)));
+  }
+
+  cell.appendChild(tile);
+  boardCells[r][c] = { letter, isBlank, isStatic: true };
+}
+
+// ── Rack Rendering ────────────────────────────────────────────────────────────
+
+function renderRack(tiles) {
+  const rack = document.getElementById('rack');
+  rack.innerHTML = '';
+
+  if (!tiles.length) {
+    rack.appendChild(el('span', 'empty-hint', 'No rack tiles in encoding'));
+    return;
+  }
+
+  for (const tile of tiles) {
+    const div = el('div', 'rack-tile' + (tile.isBlank ? ' blank' : ''));
+    div.dataset.letter = tile.letter;
+    div.dataset.blank  = tile.isBlank ? '1' : '0';
+
+    div.appendChild(el('span', 'tile-l', tile.letter));
+    if (!tile.isBlank) {
+      const val = TILE_VALUES[tile.letter] ?? 0;
+      div.appendChild(el('span', 'tile-v', String(val)));
+    }
+
+    rack.appendChild(div);
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+function loadEncoding() {
+  const raw   = document.getElementById('enc').value.trim();
+  const errEl = document.getElementById('err');
+
+  if (!raw) {
+    errEl.textContent = 'Please enter an encoding first.';
+    return;
+  }
+
+  const { boardTiles, rackTiles, errs } = parseEncoding(raw);
+  errEl.textContent = errs.length ? errs.join(' · ') : '';
+
+  // Reset board state
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      boardCells[r][c] = null;
+
+  buildBoard();
+
+  for (const t of boardTiles) {
+    placeTileOnCell(t.row, t.col, t);
+  }
+
+  renderRack(rackTiles);
+
+  const scoreEl = document.getElementById('score-display');
+  scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
+  scoreEl.className = 'score-placeholder';
+}
+
+function loadExample() {
+  document.getElementById('enc').value = EXAMPLE_ENC;
+  loadEncoding();
+}
+
+function clearAll() {
+  document.getElementById('enc').value     = '';
+  document.getElementById('err').textContent = '';
+
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      boardCells[r][c] = null;
+
+  buildBoard();
+  document.getElementById('rack').innerHTML =
+    '<span class="empty-hint">Load an encoding to see your tiles</span>';
+
+  const scoreEl = document.getElementById('score-display');
+  scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
+  scoreEl.className = 'score-placeholder';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+buildBoard();
+</script>
+</body>
+</html>
