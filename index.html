@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Scrabble Planner</title>
+  <title>Score Planner</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Cell size: responsive between 22px and 38px */
-      --cell: clamp(22px, 5.8vw, 38px);
+      /* Cell size: responsive between 28px and 48px */
+      --cell: clamp(28px, 5.5vw, 48px);
       --radius: 6px;
     }
 
@@ -17,20 +17,20 @@
       font-family: Georgia, 'Times New Roman', serif;
       background: #2c5f3a;
       min-height: 100vh;
-      padding: 14px 8px 36px;
+      padding: 16px 10px 40px;
       color: #f0dfa0;
     }
 
     h1 {
       text-align: center;
-      font-size: clamp(18px, 5vw, 28px);
+      font-size: clamp(22px, 5vw, 36px);
       letter-spacing: 4px;
       text-shadow: 2px 2px 5px rgba(0,0,0,0.55);
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .container {
-      max-width: 640px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
@@ -43,7 +43,7 @@
     }
 
     .panel-title {
-      font-size: 10px;
+      font-size: 12px;
       font-weight: bold;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -61,7 +61,7 @@
       border-radius: 4px;
       padding: 8px;
       font-family: 'Courier New', monospace;
-      font-size: 13px;
+      font-size: 14px;
       resize: vertical;
       line-height: 1.5;
     }
@@ -77,11 +77,11 @@
     }
 
     button {
-      padding: 7px 14px;
+      padding: 9px 16px;
       border: none;
       border-radius: 4px;
       font-family: Georgia, serif;
-      font-size: 13px;
+      font-size: 15px;
       cursor: pointer;
       transition: filter 0.1s, transform 0.1s;
       line-height: 1;
@@ -93,7 +93,7 @@
     .btn-secondary { background: rgba(255,255,255,0.15); color: #f0dfa0; }
 
     .hint {
-      font-size: 11px;
+      font-size: 13px;
       font-style: italic;
       color: rgba(240,223,160,0.38);
       margin-top: 7px;
@@ -105,7 +105,7 @@
       font-style: normal;
     }
 
-    .error-msg { font-size: 12px; color: #ff9b9b; margin-top: 6px; min-height: 18px; }
+    .error-msg { font-size: 13px; color: #ff9b9b; margin-top: 6px; min-height: 20px; }
 
     /* ── Board ─────────────────────────────────────────────── */
     .board-scroll {
@@ -136,7 +136,7 @@
       justify-content: center;
       background: #2c5f3a;
       color: rgba(240,223,160,0.5);
-      font-size: clamp(7px, 1.3vw, 11px);
+      font-size: clamp(9px, 1.5vw, 14px);
       font-weight: bold;
       font-family: Georgia, serif;
     }
@@ -159,7 +159,7 @@
     .cell.star { background: #e8a0a0; } /* center = DW + star */
 
     .bonus-txt {
-      font-size: clamp(4px, calc(var(--cell) * 0.165), 7px);
+      font-size: clamp(5px, calc(var(--cell) * 0.165), 9px);
       font-weight: 900;
       line-height: 1.2;
       text-align: center;
@@ -192,7 +192,7 @@
     .tile.blank { background: #f0ead8; }
 
     .tile-l {
-      font-size: clamp(9px, calc(var(--cell) * 0.43), 17px);
+      font-size: clamp(12px, calc(var(--cell) * 0.43), 22px);
       font-weight: bold;
       color: #1a0e00;
       line-height: 1;
@@ -203,7 +203,7 @@
       position: absolute;
       bottom: 1px;
       right: 2px;
-      font-size: clamp(4px, calc(var(--cell) * 0.19), 8px);
+      font-size: clamp(5px, calc(var(--cell) * 0.19), 10px);
       color: #5a3a10;
       line-height: 1;
     }
@@ -245,7 +245,7 @@
     .rack-tile.blank { background: #f0ead8; }
 
     .rack-tile .tile-l {
-      font-size: clamp(13px, calc(var(--cell) * 0.52), 20px);
+      font-size: clamp(16px, calc(var(--cell) * 0.52), 26px);
       font-weight: bold;
       color: #1a0e00;
       line-height: 1;
@@ -256,7 +256,7 @@
       position: absolute;
       bottom: 2px;
       right: 3px;
-      font-size: clamp(6px, calc(var(--cell) * 0.23), 10px);
+      font-size: clamp(7px, calc(var(--cell) * 0.23), 12px);
       color: #5a3a10;
       line-height: 1;
     }
@@ -264,14 +264,130 @@
     .empty-hint {
       color: rgba(245,230,176,0.38);
       font-style: italic;
-      font-size: 13px;
+      font-size: 15px;
     }
 
     /* ── Score Preview ─────────────────────────────────────── */
     .score-placeholder {
       color: rgba(240,223,160,0.38);
       font-style: italic;
+      font-size: 15px;
+    }
+
+    .score-words {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 16px;
+    }
+
+    .score-word {
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      font-size: 17px;
+      flex: 1;
+    }
+
+    .score-mult {
+      background: rgba(240,223,160,0.18);
+      border-radius: 3px;
+      padding: 1px 5px;
       font-size: 13px;
+      font-weight: bold;
+      color: rgba(240,223,160,0.65);
+      white-space: nowrap;
+    }
+
+    .score-pts {
+      font-size: 17px;
+      font-weight: bold;
+      min-width: 32px;
+      text-align: right;
+    }
+
+    .bingo-row .score-word,
+    .bingo-row .score-pts { color: #f0c040; }
+
+    .score-divider {
+      border: none;
+      border-top: 1px solid rgba(240,223,160,0.18);
+      margin: 8px 0;
+    }
+
+    .score-total {
+      text-align: right;
+      font-size: 16px;
+      color: rgba(240,223,160,0.7);
+    }
+
+    .score-total strong {
+      font-size: 28px;
+      color: #f0c040;
+      margin-left: 8px;
+    }
+
+    /* ── Word highlight & valid state ──────────────────────── */
+    .cell.in-word {
+      box-shadow: inset 0 0 0 1.5px rgba(240, 223, 160, 0.38);
+    }
+
+    .player-tile.valid-play {
+      border-color: #5ab05a;
+      box-shadow: inset -1px -1px 0 rgba(0,0,0,0.2), 0 0 0 1px rgba(90,176,90,0.4);
+    }
+
+    /* ── Tile placement animation ───────────────────────────── */
+    @keyframes tilePlace {
+      0%   { transform: scale(0.72); opacity: 0.5; }
+      65%  { transform: scale(1.06); }
+      100% { transform: scale(1);    opacity: 1;   }
+    }
+
+    .player-tile { animation: tilePlace 0.17s ease-out; }
+
+    /* ── Collapsible encoding panel ─────────────────────────── */
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    .panel-header .panel-title { margin-bottom: 0; }
+
+    .panel-chevron {
+      font-size: 14px;
+      color: rgba(240,223,160,0.4);
+      transition: transform 0.2s;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .panel-header.collapsed .panel-chevron { transform: rotate(-90deg); }
+
+    #enc-body {
+      overflow: hidden;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+      max-height: 400px;
+      opacity: 1;
+    }
+    #enc-body.collapsed { max-height: 0; opacity: 0; }
+
+    /* ── Rack count badge ───────────────────────────────────── */
+    .rack-count {
+      font-weight: normal;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: rgba(240,223,160,0.42);
+      margin-left: 7px;
     }
 
     /* ── Drag & Drop ────────────────────────────────────────── */
@@ -292,6 +408,24 @@
     .player-tile:active { cursor: grabbing; }
     .player-tile.blank  { background: #f0ead8; }
 
+    .player-tile.invalid {
+      background: #ffe4e4 !important;
+      border-color: #c04040;
+      box-shadow: inset 0 0 0 1px #c04040;
+    }
+    .player-tile.invalid .tile-l { color: #8b1a1a; }
+    .player-tile.invalid .tile-v { color: #a03030; }
+
+    .score-error {
+      color: #ff9b9b;
+      font-size: 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .score-error-icon { font-size: 15px; flex-shrink: 0; }
+
     .touch-ghost {
       position: fixed;
       pointer-events: none;
@@ -311,7 +445,7 @@
     }
     .touch-ghost.blank { background: #f0ead8; }
     .touch-ghost .tile-l {
-      font-size: clamp(13px, calc(var(--cell) * 0.52), 20px);
+      font-size: clamp(16px, calc(var(--cell) * 0.52), 26px);
       font-weight: bold;
       color: #1a0e00;
       font-family: Georgia, serif;
@@ -327,27 +461,61 @@
       font-family: Georgia, serif;
       line-height: 1;
     }
+
+    /* ── Focus & keyboard selection ─────────────────────────── */
+    .rack-tile:focus-visible,
+    .player-tile:focus-visible {
+      outline: 3px solid #f0c040;
+      outline-offset: 2px;
+    }
+
+    .rack-tile.kb-selected {
+      outline: 3px solid #f0c040;
+      outline-offset: 2px;
+      transform: translateY(-3px);
+      box-shadow: 2px 6px 0 #5a4000;
+    }
+
+    .player-tile.kb-selected {
+      outline: 3px solid #f0c040;
+      outline-offset: 2px;
+    }
+
+    .cell.kb-target {
+      box-shadow: inset 0 0 0 2.5px #f0c040;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #f0c040;
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>SCRABBLE PLANNER</h1>
+  <h1>SCORE PLANNER</h1>
 
   <!-- Encoding Input -->
   <div class="panel">
-    <div class="panel-title">Board Encoding</div>
-    <textarea id="enc"
-      placeholder="BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8&#10;RACK: AEINRST"></textarea>
-    <div class="btn-row">
-      <button class="btn-primary"   onclick="loadEncoding()">Load Board</button>
-      <button class="btn-secondary" onclick="loadExample()">Example</button>
-      <button class="btn-secondary" onclick="clearAll()">Clear</button>
+    <div class="panel-header" id="enc-header" onclick="toggleEncoding()">
+      <div class="panel-title">Board Encoding</div>
+      <span class="panel-chevron">▾</span>
     </div>
-    <p class="hint">
-      Format: <code>BOARD: A@A-1, b@B-2 &nbsp; RACK: ABCDE?G</code><br>
-      Column A–O · Row 1–15 · lowercase letter on board = blank played as that letter · ? in rack = unused blank
-    </p>
-    <p class="error-msg" id="err"></p>
+    <div id="enc-body">
+      <textarea id="enc"
+        placeholder="BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8&#10;RACK: AEINRST"></textarea>
+      <div class="btn-row">
+        <button class="btn-primary"   onclick="loadEncoding()">Load Board</button>
+        <button class="btn-secondary" onclick="loadExample()">Example</button>
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+      </div>
+      <p class="hint">
+        Format: <code>BOARD: A@A-1, b@B-2 &nbsp; RACK: ABCDE?G</code><br>
+        Column A–O · Row 1–15 · lowercase letter on board = blank played as that letter · ? in rack = unused blank
+      </p>
+      <p class="error-msg" id="err"></p>
+    </div>
   </div>
 
   <!-- Board -->
@@ -357,7 +525,7 @@
 
   <!-- Rack -->
   <div class="panel">
-    <div class="panel-title">Your Rack</div>
+    <div class="panel-title">Your Rack<span class="rack-count" id="rack-count"></span></div>
     <div class="rack-bar" id="rack">
       <span class="empty-hint">Load an encoding to see your tiles</span>
     </div>
@@ -366,12 +534,12 @@
     </div>
   </div>
 
-  <!-- Score (populated in later milestone) -->
+  <!-- Score -->
   <div class="panel">
     <div class="panel-title">Score Preview</div>
-    <p class="score-placeholder" id="score-display">
+    <div class="score-placeholder" id="score-display" aria-live="polite" aria-atomic="true">
       Place tiles on the board to calculate your turn score
-    </p>
+    </div>
   </div>
 </div>
 
@@ -529,11 +697,21 @@ function createRackTileElement(tile) {
   div.id = 'rack-tile-' + tile.id;
   div.dataset.tileId = tile.id;
   div.draggable = true;
+  div.tabIndex = 0;
+  div.setAttribute('role', 'button');
+  div.setAttribute('aria-label', tile.isBlank ? 'Blank tile' : `Tile ${tile.letter}, ${TILE_VALUES[tile.letter] ?? 0} point${TILE_VALUES[tile.letter] === 1 ? '' : 's'}`);
   div.appendChild(el('span', 'tile-l', tile.letter));
   if (!tile.isBlank) div.appendChild(el('span', 'tile-v', String(TILE_VALUES[tile.letter] ?? 0)));
   div.addEventListener('dragstart', e => startDrag(e, tile.id, 'rack', null, div));
   div.addEventListener('dragend',   () => endDrag());
   div.addEventListener('touchstart', e => touchStart(e, tile.id, 'rack', null, div), { passive: false });
+  div.addEventListener('click', () => {
+    if (kbTileId === tile.id && !kbFromBoard) { kbClearSelection(); return; }
+    kbSelectTile(tile.id, false);
+  });
+  div.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); div.click(); }
+  });
   return div;
 }
 
@@ -541,11 +719,23 @@ function createPlayerTileElement(tile, r, c) {
   const div = el('div', 'tile player-tile' + (tile.isBlank ? ' blank' : ''));
   div.dataset.tileId = tile.id;
   div.draggable = true;
+  div.tabIndex = 0;
+  div.setAttribute('role', 'button');
+  div.setAttribute('aria-label', (tile.isBlank ? 'Blank tile' : `Tile ${tile.letter}`) + ' on board — click to move');
   div.appendChild(el('span', 'tile-l', tile.letter));
   if (!tile.isBlank) div.appendChild(el('span', 'tile-v', String(TILE_VALUES[tile.letter] ?? 0)));
   div.addEventListener('dragstart', e => { e.stopPropagation(); startDrag(e, tile.id, 'board', { r, c }, div); });
   div.addEventListener('dragend', () => endDrag());
   div.addEventListener('touchstart', e => { e.stopPropagation(); touchStart(e, tile.id, 'board', { r, c }, div); }, { passive: false });
+  div.addEventListener('click', e => {
+    e.stopPropagation();
+    if (kbTileId === tile.id && kbFromBoard) { kbClearSelection(); return; }
+    kbSelectTile(tile.id, true);
+  });
+  div.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); div.click(); }
+    if (e.key === 'Escape') kbClearSelection();
+  });
   return div;
 }
 
@@ -572,6 +762,46 @@ let nextTileId = 0;
 
 const drag = { active: false, tileId: null, sourceType: null, sourceCell: null, dragEl: null };
 let touchGhost = null, touchDragActive = false;
+
+// ── Keyboard selection state ──────────────────────────────────────────────────
+
+let kbTileId = null;   // id of selected tile (rack or placed), null = none
+let kbFromBoard = false; // true if the selected tile is already placed on the board
+
+function kbSelectTile(tileId, fromBoard) {
+  kbClearSelection();
+  kbTileId = tileId;
+  kbFromBoard = fromBoard;
+  const srcEl = fromBoard
+    ? document.querySelector(`[data-tile-id="${tileId}"].player-tile`)
+    : document.getElementById('rack-tile-' + tileId);
+  if (srcEl) srcEl.classList.add('kb-selected');
+  // highlight empty cells as kb-target
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      if (!boardCells[r][c])
+        document.getElementById('cell-' + r + '-' + c)?.classList.add('kb-target');
+}
+
+function kbClearSelection() {
+  if (kbTileId !== null) {
+    document.getElementById('rack-tile-' + kbTileId)?.classList.remove('kb-selected');
+    document.querySelector(`[data-tile-id="${kbTileId}"].player-tile`)?.classList.remove('kb-selected');
+  }
+  kbTileId = null; kbFromBoard = false;
+  document.querySelectorAll('.cell.kb-target').forEach(el => el.classList.remove('kb-target'));
+}
+
+function kbPlaceAt(r, c) {
+  if (kbTileId === null || boardCells[r][c]) return;
+  if (kbFromBoard) {
+    const tile = rackTiles.find(t => t.id === kbTileId);
+    if (tile) movePlayerTile(kbTileId, tile.boardR, tile.boardC, r, c);
+  } else {
+    placePlayerTile(kbTileId, r, c);
+  }
+  kbClearSelection();
+}
 
 // ── Mouse drag ────────────────────────────────────────────────────────────────
 
@@ -611,6 +841,14 @@ function setupDropZones() {
             movePlayerTile(drag.tileId, drag.sourceCell.r, drag.sourceCell.c, r, c);
         }
       });
+      cellEl.addEventListener('click', () => {
+        if (kbTileId !== null && !boardCells[r][c]) kbPlaceAt(r, c);
+      });
+      cellEl.addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ' ') && kbTileId !== null && !boardCells[r][c]) {
+          e.preventDefault(); kbPlaceAt(r, c);
+        }
+      });
     }
   }
   const rackEl = document.getElementById('rack');
@@ -641,6 +879,8 @@ function placePlayerTile(tileId, r, c) {
   const bt = cellEl.querySelector('.bonus-txt');
   if (bt) bt.style.visibility = 'hidden';
   cellEl.appendChild(createPlayerTileElement(tile, r, c));
+  updateScore();
+  updateRackCount();
 }
 
 function movePlayerTile(tileId, fromR, fromC, toR, toC) {
@@ -655,6 +895,8 @@ function movePlayerTile(tileId, fromR, fromC, toR, toC) {
   const toEl = document.getElementById('cell-' + toR + '-' + toC);
   const tb = toEl.querySelector('.bonus-txt'); if (tb) tb.style.visibility = 'hidden';
   toEl.appendChild(createPlayerTileElement(tile, toR, toC));
+  updateScore();
+  updateRackCount();
 }
 
 function recallTile(tileId) {
@@ -669,6 +911,8 @@ function recallTile(tileId) {
   const rack = document.getElementById('rack');
   rack.querySelector('.empty-hint')?.remove();
   rack.appendChild(createRackTileElement(tile));
+  updateScore();
+  updateRackCount();
 }
 
 function recallAll() {
@@ -743,9 +987,244 @@ function onTouchEnd(e) {
   drag.active = false; drag.tileId = null; drag.sourceType = null; drag.sourceCell = null; drag.dragEl = null;
 }
 
+// ── Validation ────────────────────────────────────────────────────────────────
+
+// Returns { valid: bool, error: string|null }
+// newTiles is an array of { r, c } for all newly placed (non-static) tiles.
+function validatePlacement(newTiles) {
+  if (newTiles.length === 0) return { valid: true, error: null };
+
+  const rows = new Set(newTiles.map(t => t.r));
+  const cols = new Set(newTiles.map(t => t.c));
+  const sameRow = rows.size === 1;
+  const sameCol = cols.size === 1;
+
+  // Multiple tiles must all share a row or all share a column
+  if (newTiles.length > 1 && !sameRow && !sameCol) {
+    return { valid: false, error: 'All tiles must be placed in the same row or column.' };
+  }
+
+  // No empty gaps between the outermost new tiles (existing tiles in between are fine)
+  if (sameRow && newTiles.length > 1) {
+    const row = [...rows][0];
+    const cs  = newTiles.map(t => t.c).sort((a, b) => a - b);
+    for (let c = cs[0]; c <= cs[cs.length - 1]; c++) {
+      if (!boardCells[row][c]) {
+        return { valid: false, error: 'Tiles cannot have empty gaps between them.' };
+      }
+    }
+  }
+  if (sameCol && newTiles.length > 1) {
+    const col = [...cols][0];
+    const rs  = newTiles.map(t => t.r).sort((a, b) => a - b);
+    for (let r = rs[0]; r <= rs[rs.length - 1]; r++) {
+      if (!boardCells[r][col]) {
+        return { valid: false, error: 'Tiles cannot have empty gaps between them.' };
+      }
+    }
+  }
+
+  // Connectivity: must touch the existing board, or cover center on first play
+  const hasStatic = boardCells.some(row => row.some(cell => cell?.isStatic));
+
+  if (!hasStatic) {
+    // First play: if more than one tile, must cover the center star (H8 = r7,c7)
+    if (newTiles.length > 1 && !newTiles.some(t => t.r === 7 && t.c === 7)) {
+      return { valid: false, error: 'First play must cover the center square (H8).' };
+    }
+    // Single tile on empty board: not yet an error — player may still be placing
+  } else {
+    // Subsequent plays: at least one new tile must be orthogonally adjacent to a static tile
+    const connected = newTiles.some(({ r, c }) =>
+      (r > 0  && boardCells[r - 1][c]?.isStatic) ||
+      (r < 14 && boardCells[r + 1][c]?.isStatic) ||
+      (c > 0  && boardCells[r][c - 1]?.isStatic) ||
+      (c < 14 && boardCells[r][c + 1]?.isStatic)
+    );
+    if (!connected) {
+      return { valid: false, error: 'Tiles must connect to letters already on the board.' };
+    }
+  }
+
+  return { valid: true, error: null };
+}
+
+// ── Scoring ───────────────────────────────────────────────────────────────────
+
+// Walk from (r,c) in direction (dr,dc) and return the full word that passes
+// through this cell, or null if the word is < 2 tiles or has no new tiles.
+function getWordAt(r, c, dr, dc) {
+  // Step backward to find the start of the word
+  let sr = r, sc = c;
+  while (
+    sr - dr >= 0 && sr - dr <= 14 &&
+    sc - dc >= 0 && sc - dc <= 14 &&
+    boardCells[sr - dr][sc - dc]
+  ) { sr -= dr; sc -= dc; }
+
+  // Collect tiles walking forward
+  const tiles = [];
+  let cr = sr, cc = sc;
+  while (cr >= 0 && cr < 15 && cc >= 0 && cc < 15 && boardCells[cr][cc]) {
+    tiles.push({ r: cr, c: cc, cell: boardCells[cr][cc] });
+    cr += dr; cc += dc;
+  }
+
+  // Must be ≥ 2 tiles and contain at least one newly placed tile
+  if (tiles.length < 2) return null;
+  if (!tiles.some(t => !t.cell.isStatic)) return null;
+  return tiles;
+}
+
+// Score a word. Bonus squares only apply to newly placed (non-static) tiles.
+// Returns { score, wordMult, breakdown } where breakdown lists per-tile info.
+function scoreWord(tiles) {
+  let letterSum = 0;
+  let wordMult  = 1;
+
+  for (const { r, c, cell } of tiles) {
+    const base = cell.isBlank ? 0 : (TILE_VALUES[cell.letter] ?? 0);
+
+    if (cell.isStatic) {
+      // Already-played tile: no bonus
+      letterSum += base;
+    } else {
+      // Newly placed tile: apply bonus square
+      const bonus = BONUS_MAP.get(`${r},${c}`);
+      if      (bonus === 'DL') { letterSum += base * 2; }
+      else if (bonus === 'TL') { letterSum += base * 3; }
+      else if (bonus === 'DW') { letterSum += base; wordMult *= 2; }
+      else if (bonus === 'TW') { letterSum += base; wordMult *= 3; }
+      else                     { letterSum += base; }
+    }
+  }
+
+  return { score: letterSum * wordMult, wordMult };
+}
+
+function updateScore() {
+  const scoreEl = document.getElementById('score-display');
+
+  // Collect newly placed tiles
+  const newTiles = [];
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      if (boardCells[r][c] && !boardCells[r][c].isStatic)
+        newTiles.push({ r, c });
+
+  // Clear all previous per-turn styling
+  document.querySelectorAll('.player-tile.invalid, .player-tile.valid-play')
+          .forEach(el => el.classList.remove('invalid', 'valid-play'));
+  document.querySelectorAll('.cell.in-word')
+          .forEach(el => el.classList.remove('in-word'));
+
+  if (newTiles.length === 0) {
+    scoreEl.className = 'score-placeholder';
+    scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
+    return;
+  }
+
+  // ── Validate placement ──
+  const { valid, error } = validatePlacement(newTiles);
+
+  if (!valid) {
+    document.querySelectorAll('.player-tile')
+            .forEach(el => el.classList.add('invalid'));
+    scoreEl.className = 'score-error';
+    scoreEl.innerHTML =
+      `<span class="score-error-icon">⚠</span><span>${error}</span>`;
+    return;
+  }
+
+  // ── Find all unique words containing at least one new tile ──
+  const seen  = new Set();
+  const words = [];
+
+  for (const { r, c } of newTiles) {
+    const hw = getWordAt(r, c, 0, 1);
+    if (hw) {
+      const key = `h,${hw[0].r},${hw[0].c},${hw[hw.length - 1].c}`;
+      if (!seen.has(key)) { seen.add(key); words.push(hw); }
+    }
+    const vw = getWordAt(r, c, 1, 0);
+    if (vw) {
+      const key = `v,${vw[0].r},${vw[0].c},${vw[vw.length - 1].r}`;
+      if (!seen.has(key)) { seen.add(key); words.push(vw); }
+    }
+  }
+
+  if (words.length === 0) {
+    scoreEl.className = 'score-placeholder';
+    scoreEl.textContent = 'Place tiles next to existing letters to form a word';
+    return;
+  }
+
+  // Highlight all cells in every formed word and mark player tiles as valid
+  for (const word of words) {
+    for (const { r, c } of word) {
+      document.getElementById(`cell-${r}-${c}`)?.classList.add('in-word');
+    }
+  }
+  document.querySelectorAll('.player-tile')
+          .forEach(el => el.classList.add('valid-play'));
+
+  // ── Score each word ──
+  let total = 0;
+  const wordScores = words.map(word => {
+    const { score, wordMult } = scoreWord(word);
+    total += score;
+    return { text: word.map(t => t.cell.letter).join(''), score, wordMult };
+  });
+
+  // Bingo: all 7 rack tiles placed this turn
+  const bingo = rackTiles.length === 7 && rackTiles.every(t => t.placed);
+  if (bingo) total += 50;
+
+  // ── Render ──
+  scoreEl.className = '';
+  let html = '<div class="score-words">';
+  for (const { text, score, wordMult } of wordScores) {
+    const mult = wordMult > 1 ? `<span class="score-mult">×${wordMult}</span>` : '';
+    html += `<div class="score-row">
+      <span class="score-word">${text}</span>${mult}
+      <span class="score-pts">${score}</span>
+    </div>`;
+  }
+  if (bingo) {
+    html += `<div class="score-row bingo-row">
+      <span class="score-word">BINGO!</span>
+      <span class="score-pts">+50</span>
+    </div>`;
+  }
+  html += '</div><hr class="score-divider">';
+  html += `<div class="score-total">Turn score: <strong>${total}</strong></div>`;
+  scoreEl.innerHTML = html;
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+
+function toggleEncoding(forceCollapse) {
+  const body   = document.getElementById('enc-body');
+  const header = document.getElementById('enc-header');
+  const collapse = forceCollapse !== undefined
+    ? forceCollapse
+    : !body.classList.contains('collapsed');
+  body.classList.toggle('collapsed', collapse);
+  header.classList.toggle('collapsed', collapse);
+}
+
+function updateRackCount() {
+  const el = document.getElementById('rack-count');
+  if (!el) return;
+  const total  = rackTiles.length;
+  const placed = rackTiles.filter(t => t.placed).length;
+  el.textContent = total > 0 ? `${placed} / ${total} placed` : '';
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 function loadEncoding() {
+  kbClearSelection();
   const raw   = document.getElementById('enc').value.trim();
   const errEl = document.getElementById('err');
 
@@ -770,10 +1249,11 @@ function loadEncoding() {
   }
 
   renderRack(rawRack);
+  updateRackCount();
+  updateScore();
 
-  const scoreEl = document.getElementById('score-display');
-  scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
-  scoreEl.className = 'score-placeholder';
+  // Collapse the encoding panel so the board gets more screen space
+  setTimeout(() => toggleEncoding(true), 250);
 }
 
 function loadExample() {
@@ -782,6 +1262,7 @@ function loadExample() {
 }
 
 function clearAll() {
+  kbClearSelection();
   document.getElementById('enc').value     = '';
   document.getElementById('err').textContent = '';
   rackTiles = [];
@@ -793,15 +1274,18 @@ function clearAll() {
   buildBoard();
   document.getElementById('rack').innerHTML =
     '<span class="empty-hint">Load an encoding to see your tiles</span>';
-
-  const scoreEl = document.getElementById('score-display');
-  scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
-  scoreEl.className = 'score-placeholder';
+  updateRackCount();
+  updateScore();
+  toggleEncoding(false); // re-expand encoding panel
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 buildBoard();
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') kbClearSelection();
+});
 </script>
 </body>
 </html>
