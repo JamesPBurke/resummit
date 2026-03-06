@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Board Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cell: clamp(28px, 5.5vw, 48px);
+      --radius: 6px;
+      --gold:        #c49a30;
+      --gold-bright: #dab845;
+      --gold-dim:    rgba(196,154,48,0.48);
+      --text:        #d0bc7a;
+    }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: radial-gradient(ellipse at 50% -5%, #201c10 0%, #0e0b07 100%);
+      min-height: 100vh;
+      padding: 16px 10px 40px;
+      color: var(--text);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: clamp(22px, 5vw, 36px);
+      letter-spacing: 4px;
+      color: #d4b660;
+      text-shadow: 0 2px 22px rgba(196,154,48,0.22), 0 1px 4px rgba(0,0,0,0.75);
+      margin-bottom: 10px;
+    }
+
+    /* ── Page nav ───────────────────────────────────────────── */
+    .page-nav {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .page-nav a {
+      color: var(--gold-dim);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 3px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .page-nav a:hover { color: var(--text); background: rgba(196,154,48,0.08); }
+    .page-nav a.active { color: var(--gold-bright); font-weight: bold; }
+    .page-nav .nav-sep { color: rgba(196,154,48,0.18); margin: 0 2px; }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* ── Panels ────────────────────────────────────────────── */
+    .panel {
+      background: rgba(255,232,150,0.038);
+      border: 1px solid rgba(196,154,48,0.1);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(196,154,48,0.62);
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      background: rgba(0,0,0,0.38);
+      color: var(--text);
+      border: 1px solid rgba(196,154,48,0.15);
+      border-radius: 4px;
+      padding: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    textarea:focus { outline: 1px solid rgba(196,154,48,0.42); }
+    textarea::placeholder { color: rgba(208,188,122,0.24); }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 4px;
+      font-family: Georgia, serif;
+      font-size: 15px;
+      cursor: pointer;
+      transition: filter 0.1s, transform 0.1s;
+      line-height: 1;
+    }
+    button:hover  { filter: brightness(1.15); }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: default; filter: none; transform: none; }
+
+    .btn-primary   { background: var(--gold); color: #0e0800; font-weight: bold; }
+    .btn-secondary {
+      background: rgba(196,154,48,0.1);
+      color: var(--text);
+      border: 1px solid rgba(196,154,48,0.2);
+    }
+    .btn-danger    { background: #7a1515; color: #f5e0d0; font-weight: bold; }
+
+    .hint {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(196,154,48,0.34);
+      margin-top: 7px;
+      line-height: 1.6;
+    }
+    .hint code {
+      font-family: 'Courier New', monospace;
+      color: rgba(196,154,48,0.5);
+      font-style: normal;
+    }
+
+    .error-msg { font-size: 13px; color: #f08080; margin-top: 6px; min-height: 20px; }
+
+    /* ── Status bar ─────────────────────────────────────────── */
+    .status-bar {
+      background: rgba(255,232,150,0.032);
+      border: 1px solid rgba(196,154,48,0.1);
+      border-left: 3px solid rgba(196,154,48,0.28);
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-height: 46px;
+    }
+
+    #status-text {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(196,154,48,0.6);
+      flex: 1;
+      min-width: 120px;
+    }
+
+    #pending-controls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #pending-controls label {
+      font-size: 13px;
+      color: rgba(196,154,48,0.62);
+    }
+
+    #tile-letter-input {
+      width: 44px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      font-family: Georgia, serif;
+      background: rgba(0,0,0,0.42);
+      color: var(--text);
+      border: 1.5px solid rgba(196,154,48,0.5);
+      border-radius: 4px;
+      padding: 4px 6px;
+      outline: none;
+    }
+    #tile-letter-input:focus { border-color: var(--gold-bright); }
+
+    #pending-hint {
+      font-size: 12px;
+      font-style: italic;
+      color: rgba(196,154,48,0.38);
+    }
+
+    /* ── Board ─────────────────────────────────────────────── */
+    .board-scroll {
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #board-grid {
+      display: grid;
+      grid-template-columns: calc(var(--cell) * 0.72) repeat(15, var(--cell));
+      grid-template-rows: calc(var(--cell) * 0.62) repeat(15, var(--cell));
+      gap: 1px;
+      background: #090705;
+      border: 2px solid #090705;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .lbl {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0e0b07;
+      color: rgba(196,154,48,0.35);
+      font-size: clamp(9px, 1.5vw, 14px);
+      font-weight: bold;
+      font-family: Georgia, serif;
+    }
+
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #3a6848;
+      user-select: none;
+      cursor: pointer;
+    }
+    .cell:hover { filter: brightness(1.1); }
+    .cell.tw   { background: #781515; }
+    .cell.dw   { background: #a87070; }
+    .cell.tl   { background: #1c3d84; }
+    .cell.dl   { background: #507898; }
+    .cell.star { background: #a87070; }
+
+    .bonus-txt {
+      font-size: clamp(5px, calc(var(--cell) * 0.165), 9px);
+      font-weight: 900;
+      line-height: 1.2;
+      text-align: center;
+      pointer-events: none;
+      letter-spacing: -0.3px;
+    }
+    .cell.tw   .bonus-txt { color: rgba(255,210,200,0.92); }
+    .cell.dw   .bonus-txt { color: #4a1010; }
+    .cell.tl   .bonus-txt { color: rgba(200,218,255,0.92); }
+    .cell.dl   .bonus-txt { color: #091228; }
+    .cell.star .bonus-txt { color: #4a1010; font-size: clamp(8px, calc(var(--cell) * 0.4), 18px); }
+
+    /* ── Board tiles ────────────────────────────────────────── */
+    .board-tile {
+      position: absolute;
+      inset: 1px;
+      background: #f5ebbe;
+      border-radius: 2px;
+      border: 1px solid #9a7010;
+      box-shadow: inset -1px -2px 0 rgba(0,0,0,0.2), inset 1px 1px 0 rgba(255,255,240,0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      z-index: 2;
+    }
+    .board-tile:active { cursor: grabbing; }
+    .board-tile.blank { background: #ede5c5; }
+    .board-tile.selected {
+      outline: 2.5px solid var(--gold-bright);
+      box-shadow: inset -1px -2px 0 rgba(0,0,0,0.2), 0 0 10px rgba(196,154,48,0.38);
+    }
+    .board-tile.dragging { opacity: 0.25; }
+
+    .tile-l {
+      font-size: clamp(12px, calc(var(--cell) * 0.43), 22px);
+      font-weight: bold;
+      color: #1a0c00;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .board-tile.blank .tile-l { color: #9a8860; }
+
+    .tile-v {
+      position: absolute;
+      bottom: 1px;
+      right: 2px;
+      font-size: clamp(5px, calc(var(--cell) * 0.19), 10px);
+      color: #7a5010;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* ── Pending cell indicator ─────────────────────────────── */
+    .cell.pending-input { box-shadow: inset 0 0 0 2.5px rgba(196,154,48,0.75); }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .pending-cursor {
+      width: 2px;
+      height: 50%;
+      background: var(--gold);
+      animation: blink 0.85s step-end infinite;
+      pointer-events: none;
+    }
+
+    /* ── Drop target ────────────────────────────────────────── */
+    .cell.drop-target { box-shadow: inset 0 0 0 2px rgba(196,154,48,0.85); }
+
+    /* ── Touch ghost ────────────────────────────────────────── */
+    .touch-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.9;
+      transform: translate(-50%, -50%) scale(1.1);
+      width: calc(var(--cell) + 6px);
+      height: calc(var(--cell) + 6px);
+      background: #f5ebbe;
+      border: 2px solid #9a7010;
+      box-shadow: 2px 6px 14px rgba(0,0,0,0.55);
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .touch-ghost.blank { background: #ede5c5; }
+    .touch-ghost .tile-l {
+      font-size: clamp(16px, calc(var(--cell) * 0.52), 26px);
+      font-weight: bold;
+      color: #1a0c00;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .touch-ghost.blank .tile-l { color: #9a8860; }
+    .touch-ghost .tile-v {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: clamp(6px, calc(var(--cell) * 0.23), 10px);
+      color: #7a5010;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+
+    /* ── Rack ───────────────────────────────────────────────── */
+    .rack-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: #221508;
+      border: 3px solid #312010;
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      min-height: calc(var(--cell) + 24px);
+    }
+
+    .rack-tile {
+      width: calc(var(--cell) + 6px);
+      height: calc(var(--cell) + 6px);
+      background: #f5ebbe;
+      border: 2px solid #9a7010;
+      box-shadow: 2px 3px 0 #160e04;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      user-select: none;
+    }
+    .rack-tile:hover {
+      transform: translateY(-3px);
+      box-shadow: 2px 5px 0 #160e04;
+    }
+    .rack-tile.blank { background: #ede5c5; }
+    .rack-tile.rack-selected {
+      outline: 2.5px solid var(--gold-bright);
+      transform: translateY(-3px);
+      box-shadow: 2px 5px 0 #160e04;
+    }
+
+    .rack-tile .tile-l {
+      font-size: clamp(16px, calc(var(--cell) * 0.52), 26px);
+      font-weight: bold;
+      color: #1a0c00;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .rack-tile.blank .tile-l { color: #9a8860; }
+    .rack-tile .tile-v {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: clamp(7px, calc(var(--cell) * 0.23), 12px);
+      color: #7a5010;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .rack-add-slot {
+      width: calc(var(--cell) + 6px);
+      height: calc(var(--cell) + 6px);
+      border: 2px dashed rgba(196,154,48,0.22);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 300;
+      color: rgba(196,154,48,0.28);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .rack-add-slot:hover {
+      border-color: rgba(196,154,48,0.62);
+      color: rgba(196,154,48,0.7);
+    }
+
+    .rack-count {
+      font-weight: normal;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: rgba(196,154,48,0.4);
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>BOARD EDITOR</h1>
+
+  <nav class="page-nav">
+    <a href="index.html">Score Planner</a>
+    <span class="nav-sep">|</span>
+    <a href="boardfix.html" class="active">Board Editor</a>
+  </nav>
+
+  <!-- Import -->
+  <div class="panel">
+    <div class="panel-title">Import Encoding</div>
+    <textarea id="enc-in" placeholder="BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8&#10;RACK: AEINRST"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary"   onclick="loadEncoding()">Load Board</button>
+      <button class="btn-secondary" onclick="loadExample()">Example</button>
+      <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+    </div>
+    <p class="hint">
+      Format: <code>BOARD: A@A-1, b@B-2 &nbsp; RACK: ABCDE?G</code> — Column A–O · Row 1–15 · lowercase = blank tile · ? in rack = blank
+    </p>
+    <p class="error-msg" id="err"></p>
+  </div>
+
+  <!-- Status / action bar -->
+  <div class="status-bar">
+    <span id="status-text">Click a tile to select it &middot; Click an empty cell to place a new tile &middot; Drag board tiles to move them</span>
+    <div id="pending-controls">
+      <label for="tile-letter-input">Letter:</label>
+      <input id="tile-letter-input" type="text" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false">
+      <span id="pending-hint">UPPERCASE = regular &nbsp;|&nbsp; lowercase = blank</span>
+      <button class="btn-secondary" onclick="setMode('idle')">Cancel</button>
+    </div>
+    <button class="btn-danger" id="btn-remove" style="display:none" onclick="removeSelected()">Remove Tile</button>
+  </div>
+
+  <!-- Board -->
+  <div class="board-scroll">
+    <div id="board-grid"></div>
+  </div>
+
+  <!-- Rack -->
+  <div class="panel">
+    <div class="panel-title">Rack<span class="rack-count" id="rack-count"></span></div>
+    <div class="rack-bar" id="rack-bar"></div>
+    <p class="hint">Up to 7 tiles &middot; Click a tile to select it (then Delete to remove) &middot; Click <strong style="color:rgba(240,223,160,0.6)">+</strong> to add &middot; ? = blank</p>
+  </div>
+
+  <!-- Export -->
+  <div class="panel">
+    <div class="panel-title">Export Encoding</div>
+    <textarea id="enc-out" readonly placeholder="(board is empty)"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" id="btn-copy" onclick="copyEncoding()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const TILE_VALUES = {
+  A:1, B:3, C:3, D:2, E:1, F:4, G:2, H:4, I:1, J:8,
+  K:5, L:1, M:3, N:1, O:1, P:3, Q:10, R:1, S:1, T:1,
+  U:1, V:4, W:4, X:8, Y:4, Z:10
+};
+
+const COLS = 'ABCDEFGHIJKLMNO';
+
+const BONUS_MAP = (() => {
+  const m = new Map();
+  const d = {
+    TW: [[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]],
+    DW: [[1,1],[1,13],[2,2],[2,12],[3,3],[3,11],[4,4],[4,10],[7,7],
+         [10,4],[10,10],[11,3],[11,11],[12,2],[12,12],[13,1],[13,13]],
+    TL: [[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],
+         [9,1],[9,5],[9,9],[9,13],[13,5],[13,9]],
+    DL: [[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],
+         [6,2],[6,6],[6,8],[6,12],[7,3],[7,11],
+         [8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],
+         [12,6],[12,8],[14,3],[14,11]]
+  };
+  for (const [type, coords] of Object.entries(d))
+    for (const [r, c] of coords) m.set(`${r},${c}`, type);
+  return m;
+})();
+
+const EXAMPLE_ENC =
+  'BOARD: H@D-8, E@E-8, L@F-8, L@G-8, O@H-8, W@H-6, O@H-7, R@H-9, L@H-10, D@H-11\nRACK: AEINRST';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+// boardCells[r][c] = { letter (uppercase), isBlank } | null
+const boardCells = Array.from({length: 15}, () => Array(15).fill(null));
+
+// rackTiles[i] = { letter (uppercase, or '?' for blank), isBlank }
+let rackTiles = [];
+
+// mode: 'idle' | 'selected' | 'pending' | 'rack-sel' | 'rack-add'
+let mode  = 'idle';
+let selR  = null, selC  = null;   // board tile selection
+let pendR = null, pendC = null;   // board pending cell
+let rackSelIdx = null;            // rack tile selection index
+
+// Board drag
+const drag = { active: false, fromR: null, fromC: null, el: null };
+let touchGhost = null;
+let touchMoved = false;
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function el(tag, cls, txt) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt !== undefined) e.textContent = txt;
+  return e;
+}
+
+// ── Parsing ───────────────────────────────────────────────────────────────────
+
+function parseEncoding(raw) {
+  const errs = [];
+  const boardMatch = raw.match(/BOARD\s*:\s*([\s\S]*?)(?=RACK\s*:|$)/i);
+  const rackMatch  = raw.match(/RACK\s*:\s*([A-Za-z?]*)/i);
+  const boardTiles = [];
+
+  if (boardMatch?.[1]?.trim()) {
+    for (const tok of boardMatch[1].split(',')) {
+      const t = tok.trim();
+      if (!t) continue;
+      const m = t.match(/^([A-Za-z])@([A-Oa-o])-(\d{1,2})$/);
+      if (!m) { errs.push(`Invalid token: "${t}"`); continue; }
+      const letter = m[1];
+      const col    = m[2].toUpperCase().charCodeAt(0) - 65;
+      const row    = parseInt(m[3], 10) - 1;
+      if (row < 0 || row > 14) { errs.push(`Row out of range in "${t}"`); continue; }
+      const isBlank = letter !== letter.toUpperCase();
+      boardTiles.push({ letter: letter.toUpperCase(), col, row, isBlank });
+    }
+  }
+
+  const rackLetters = [];
+  if (rackMatch?.[1]) {
+    for (const ch of rackMatch[1]) {
+      if (rackLetters.length >= 7) break;
+      const isBlank = ch === '?';
+      rackLetters.push({ letter: isBlank ? '?' : ch.toUpperCase(), isBlank });
+    }
+  }
+
+  return { boardTiles, rackLetters, errs };
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+function encodeBoard() {
+  const tokens = [];
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      const cell = boardCells[r][c];
+      if (!cell) continue;
+      const letter = cell.isBlank ? cell.letter.toLowerCase() : cell.letter.toUpperCase();
+      tokens.push(`${letter}@${COLS[c]}-${r + 1}`);
+    }
+  }
+  const parts = [];
+  if (tokens.length) parts.push(`BOARD: ${tokens.join(', ')}`);
+  if (rackTiles.length) {
+    const rStr = rackTiles.map(t => t.isBlank ? '?' : t.letter.toUpperCase()).join('');
+    parts.push(`RACK: ${rStr}`);
+  }
+  return parts.join('\n');
+}
+
+function updateExport() {
+  document.getElementById('enc-out').value = encodeBoard();
+}
+
+async function copyEncoding() {
+  updateExport();
+  const val = document.getElementById('enc-out').value;
+  if (!val) return;
+  const btn = document.getElementById('btn-copy');
+  try {
+    await navigator.clipboard.writeText(val);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  } catch (_) {
+    document.getElementById('enc-out').select();
+  }
+}
+
+// ── Board Building ────────────────────────────────────────────────────────────
+
+function buildBoard() {
+  const grid = document.getElementById('board-grid');
+  grid.innerHTML = '';
+
+  grid.appendChild(el('div', 'lbl'));
+  for (const ch of COLS) grid.appendChild(el('div', 'lbl', ch));
+
+  for (let r = 0; r < 15; r++) {
+    grid.appendChild(el('div', 'lbl', String(r + 1)));
+    for (let c = 0; c < 15; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = `cell-${r}-${c}`;
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      const isCenter = r === 7 && c === 7;
+      const bonus    = BONUS_MAP.get(`${r},${c}`);
+
+      if (isCenter) {
+        cell.classList.add('star');
+        cell.appendChild(el('span', 'bonus-txt', '★'));
+      } else if (bonus) {
+        cell.classList.add(bonus.toLowerCase());
+        const labels = { TW: '3W', DW: '2W', TL: '3L', DL: '2L' };
+        cell.appendChild(el('span', 'bonus-txt', labels[bonus]));
+      }
+
+      setupCellListeners(cell, r, c);
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function setupCellListeners(cell, r, c) {
+  cell.addEventListener('click', () => onCellClick(r, c));
+
+  cell.addEventListener('dragover', e => {
+    if (!drag.active || (drag.fromR === r && drag.fromC === c) || boardCells[r][c]) return;
+    e.preventDefault();
+    cell.classList.add('drop-target');
+  });
+  cell.addEventListener('dragleave', () => cell.classList.remove('drop-target'));
+  cell.addEventListener('drop', e => {
+    e.preventDefault();
+    cell.classList.remove('drop-target');
+    if (drag.active && !(drag.fromR === r && drag.fromC === c) && !boardCells[r][c])
+      moveTile(drag.fromR, drag.fromC, r, c);
+  });
+}
+
+// ── Interaction: board ────────────────────────────────────────────────────────
+
+function onCellClick(r, c) {
+  if (mode === 'idle' || mode === 'rack-sel' || mode === 'rack-add') {
+    if (boardCells[r][c]) setMode('selected', r, c);
+    else                   setMode('pending',  r, c);
+  } else if (mode === 'selected') {
+    if (r === selR && c === selC) {
+      setMode('idle');
+    } else if (boardCells[r][c]) {
+      setMode('selected', r, c);
+    } else {
+      moveTile(selR, selC, r, c);
+      setMode('idle');
+    }
+  } else if (mode === 'pending') {
+    if (r === pendR && c === pendC) setMode('idle');
+    else if (boardCells[r][c])     setMode('selected', r, c);
+    else                            setMode('pending',  r, c);
+  }
+}
+
+// ── Interaction: rack ─────────────────────────────────────────────────────────
+
+function onRackTileClick(idx) {
+  if (mode === 'rack-sel' && rackSelIdx === idx) setMode('idle');
+  else setMode('rack-sel', idx);
+}
+
+function onRackAddClick() {
+  if (rackTiles.length >= 7) return;
+  setMode('rack-add');
+}
+
+// ── Mode management ───────────────────────────────────────────────────────────
+
+const IDLE_STATUS = 'Click a tile to select it \u00B7 Click an empty cell to place a new tile \u00B7 Drag board tiles to move them';
+
+function setMode(m, a, b) {
+  // Clear old board-selected visual
+  if (mode === 'selected' && selR !== null)
+    document.getElementById(`cell-${selR}-${selC}`)?.querySelector('.board-tile')?.classList.remove('selected');
+
+  // Clear old board-pending visual
+  if (mode === 'pending' && pendR !== null) {
+    const pc = document.getElementById(`cell-${pendR}-${pendC}`);
+    pc?.classList.remove('pending-input');
+    pc?.querySelector('.pending-cursor')?.remove();
+  }
+
+  // Clear old rack-sel (visual handled by renderRack)
+  rackSelIdx = null;
+
+  mode = m;
+  selR = selC = pendR = pendC = null;
+
+  const statusText      = document.getElementById('status-text');
+  const pendingControls = document.getElementById('pending-controls');
+  const btnRemove       = document.getElementById('btn-remove');
+  const letterInput     = document.getElementById('tile-letter-input');
+  const pendingHint     = document.getElementById('pending-hint');
+
+  pendingControls.style.display = 'none';
+  btnRemove.style.display       = 'none';
+
+  if (m === 'selected') {
+    selR = a; selC = b;
+    document.getElementById(`cell-${a}-${b}`)?.querySelector('.board-tile')?.classList.add('selected');
+    statusText.textContent = `Board tile selected at ${COLS[b]}${a + 1} \u00B7 Click empty cell to move \u00B7 Delete to remove \u00B7 Escape to cancel`;
+    btnRemove.textContent  = 'Remove Tile';
+    btnRemove.style.display = '';
+
+  } else if (m === 'pending') {
+    pendR = a; pendC = b;
+    const pc = document.getElementById(`cell-${a}-${b}`);
+    pc?.classList.add('pending-input');
+    pc?.appendChild(el('div', 'pending-cursor'));
+    statusText.textContent   = `Placing board tile at ${COLS[b]}${a + 1} \u00B7 Escape to cancel`;
+    pendingHint.textContent  = 'UPPERCASE = regular \u00A0|\u00A0 lowercase = blank';
+    pendingControls.style.display = 'flex';
+    letterInput.value = '';
+    setTimeout(() => letterInput.focus(), 30);
+
+  } else if (m === 'rack-sel') {
+    rackSelIdx = a;
+    const tile = rackTiles[a];
+    statusText.textContent  = `Rack tile \u201C${tile.letter}\u201D selected \u00B7 Delete to remove \u00B7 Escape to cancel`;
+    btnRemove.textContent   = 'Remove from Rack';
+    btnRemove.style.display = '';
+
+  } else if (m === 'rack-add') {
+    statusText.textContent   = `Adding rack tile \u00B7 Escape to cancel`;
+    pendingHint.textContent  = 'Any letter \u00B7 ? = blank';
+    pendingControls.style.display = 'flex';
+    letterInput.value = '';
+    setTimeout(() => letterInput.focus(), 30);
+
+  } else {
+    statusText.textContent = IDLE_STATUS;
+  }
+
+  renderRack();
+  updateExport();
+}
+
+function removeSelected() {
+  if (mode === 'selected') {
+    const r = selR, c = selC;
+    setMode('idle');
+    removeTile(r, c);
+  } else if (mode === 'rack-sel') {
+    const idx = rackSelIdx;
+    setMode('idle');
+    rackTiles.splice(idx, 1);
+    renderRack();
+    updateExport();
+  }
+}
+
+// ── Tile rendering ────────────────────────────────────────────────────────────
+
+function makeTileEl(r, c, data) {
+  const tile = el('div', 'board-tile' + (data.isBlank ? ' blank' : ''));
+  tile.draggable = true;
+  tile.appendChild(el('span', 'tile-l', data.letter));
+  if (!data.isBlank) tile.appendChild(el('span', 'tile-v', String(TILE_VALUES[data.letter] ?? 0)));
+
+  tile.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    drag.active = true; drag.fromR = r; drag.fromC = c; drag.el = tile;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => tile.classList.add('dragging'), 0);
+  });
+  tile.addEventListener('dragend', () => {
+    tile.classList.remove('dragging');
+    drag.active = false; drag.fromR = drag.fromC = null; drag.el = null;
+  });
+  tile.addEventListener('touchstart', e => onTileTouch(e, r, c, tile), { passive: false });
+
+  return tile;
+}
+
+function renderTile(r, c) {
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  if (!cell) return;
+  cell.querySelector('.board-tile')?.remove();
+  const bonusTxt = cell.querySelector('.bonus-txt');
+  const data = boardCells[r][c];
+  if (!data) {
+    if (bonusTxt) bonusTxt.style.visibility = '';
+    return;
+  }
+  if (bonusTxt) bonusTxt.style.visibility = 'hidden';
+  const tile = makeTileEl(r, c, data);
+  if (mode === 'selected' && selR === r && selC === c) tile.classList.add('selected');
+  cell.appendChild(tile);
+}
+
+function placeTile(r, c, letter, isBlank) {
+  boardCells[r][c] = { letter: letter.toUpperCase(), isBlank };
+  renderTile(r, c);
+  updateExport();
+}
+
+function removeTile(r, c) {
+  boardCells[r][c] = null;
+  renderTile(r, c);
+  updateExport();
+}
+
+function moveTile(fromR, fromC, toR, toC) {
+  if (!boardCells[fromR][fromC] || boardCells[toR][toC]) return;
+  boardCells[toR][toC] = boardCells[fromR][fromC];
+  boardCells[fromR][fromC] = null;
+  renderTile(fromR, fromC);
+  renderTile(toR, toC);
+  if (mode === 'selected' && selR === fromR && selC === fromC) {
+    selR = toR; selC = toC;
+    document.getElementById(`cell-${toR}-${toC}`)?.querySelector('.board-tile')?.classList.add('selected');
+    document.getElementById('status-text').textContent =
+      `Board tile selected at ${COLS[toC]}${toR + 1} \u00B7 Click empty cell to move \u00B7 Delete to remove \u00B7 Escape to cancel`;
+  }
+  updateExport();
+}
+
+// ── Rack rendering ────────────────────────────────────────────────────────────
+
+function renderRack() {
+  const bar = document.getElementById('rack-bar');
+  bar.innerHTML = '';
+
+  rackTiles.forEach((tile, i) => {
+    const div = el('div', 'rack-tile' + (tile.isBlank ? ' blank' : ''));
+    div.dataset.idx = i;
+    div.appendChild(el('span', 'tile-l', tile.letter));
+    if (!tile.isBlank) div.appendChild(el('span', 'tile-v', String(TILE_VALUES[tile.letter] ?? 0)));
+    if (mode === 'rack-sel' && rackSelIdx === i) div.classList.add('rack-selected');
+    div.addEventListener('click', () => onRackTileClick(i));
+    bar.appendChild(div);
+  });
+
+  if (rackTiles.length < 7) {
+    const addSlot = el('div', 'rack-add-slot', '+');
+    addSlot.title = 'Add rack tile';
+    addSlot.addEventListener('click', onRackAddClick);
+    bar.appendChild(addSlot);
+  }
+
+  const countEl = document.getElementById('rack-count');
+  if (countEl) countEl.textContent = rackTiles.length > 0 ? `(${rackTiles.length}/7)` : '';
+}
+
+// ── Letter input (pending / rack-add) ────────────────────────────────────────
+
+function placePendingLetter(key) {
+  if (mode === 'pending') {
+    if (!/^[A-Za-z]$/.test(key)) return;
+    const isBlank = /^[a-z]$/.test(key);
+    const letter  = key.toUpperCase();
+    const pr = pendR, pc = pendC;
+    // Clear pending state inline to avoid a setMode loop
+    const cell = document.getElementById(`cell-${pr}-${pc}`);
+    cell?.classList.remove('pending-input');
+    cell?.querySelector('.pending-cursor')?.remove();
+    mode = 'idle'; pendR = pendC = null;
+    document.getElementById('pending-controls').style.display = 'none';
+    document.getElementById('status-text').textContent = IDLE_STATUS;
+    renderRack();
+    placeTile(pr, pc, letter, isBlank);
+
+  } else if (mode === 'rack-add') {
+    if (!/^[A-Za-z?]$/.test(key)) return;
+    if (rackTiles.length >= 7) { setMode('idle'); return; }
+    const isBlank = key === '?';
+    const letter  = isBlank ? '?' : key.toUpperCase();
+    rackTiles.push({ letter, isBlank });
+    mode = 'idle';
+    document.getElementById('pending-controls').style.display = 'none';
+    document.getElementById('status-text').textContent = IDLE_STATUS;
+    renderRack();
+    updateExport();
+  }
+}
+
+// Letter input element — handles both desktop focus and mobile keyboard
+const letterInput = document.getElementById('tile-letter-input');
+letterInput.addEventListener('input', function() {
+  const val = this.value;
+  this.value = '';
+  if (val) placePendingLetter(val[val.length - 1]);
+});
+letterInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); setMode('idle'); }
+});
+
+// Global keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.target === letterInput) return;
+
+  if (e.key === 'Escape') { setMode('idle'); return; }
+
+  if (mode === 'pending') {
+    if (/^[A-Za-z]$/.test(e.key)) { e.preventDefault(); placePendingLetter(e.key); }
+    return;
+  }
+  if (mode === 'rack-add') {
+    if (/^[A-Za-z?]$/.test(e.key)) { e.preventDefault(); placePendingLetter(e.key); }
+    return;
+  }
+  if (mode === 'selected' || mode === 'rack-sel') {
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSelected(); }
+  }
+});
+
+// ── Touch drag (board tiles only) ─────────────────────────────────────────────
+
+function onTileTouch(e, r, c, tileEl) {
+  e.preventDefault();
+  touchMoved   = false;
+  drag.active  = true;
+  drag.fromR   = r;
+  drag.fromC   = c;
+  drag.el      = tileEl;
+  tileEl.classList.add('dragging');
+
+  const data = boardCells[r][c];
+  touchGhost = el('div', 'touch-ghost' + (data.isBlank ? ' blank' : ''));
+  touchGhost.appendChild(el('span', 'tile-l', data.letter));
+  if (!data.isBlank)
+    touchGhost.appendChild(el('span', 'tile-v', String(TILE_VALUES[data.letter] ?? 0)));
+  document.body.appendChild(touchGhost);
+
+  const t = e.touches[0];
+  touchGhost.style.left = t.clientX + 'px';
+  touchGhost.style.top  = t.clientY + 'px';
+
+  document.addEventListener('touchmove',   onTouchMove,   { passive: false });
+  document.addEventListener('touchend',    onTouchEnd,    { once: true });
+  document.addEventListener('touchcancel', onTouchEnd,    { once: true });
+}
+
+function onTouchMove(e) {
+  if (!drag.active) return;
+  e.preventDefault();
+  touchMoved = true;
+  const t = e.touches[0];
+  if (touchGhost) {
+    touchGhost.style.left    = t.clientX + 'px';
+    touchGhost.style.top     = t.clientY + 'px';
+    touchGhost.style.display = 'none';
+  }
+  const target = document.elementFromPoint(t.clientX, t.clientY);
+  if (touchGhost) touchGhost.style.display = '';
+  document.querySelectorAll('.cell.drop-target').forEach(x => x.classList.remove('drop-target'));
+  if (target) {
+    const cell = target.closest('.cell');
+    if (cell) {
+      const tr = parseInt(cell.dataset.r), tc = parseInt(cell.dataset.c);
+      if (!boardCells[tr][tc] && !(tr === drag.fromR && tc === drag.fromC))
+        cell.classList.add('drop-target');
+    }
+  }
+}
+
+function onTouchEnd(e) {
+  document.removeEventListener('touchmove', onTouchMove);
+  if (!drag.active) return;
+
+  if (drag.el) drag.el.classList.remove('dragging');
+  if (touchGhost) touchGhost.style.display = 'none';
+
+  const t       = e.changedTouches[0];
+  const target  = document.elementFromPoint(t.clientX, t.clientY);
+  const fromR   = drag.fromR, fromC = drag.fromC;
+
+  if (touchGhost) { touchGhost.remove(); touchGhost = null; }
+  document.querySelectorAll('.cell.drop-target').forEach(x => x.classList.remove('drop-target'));
+  drag.active = false; drag.fromR = drag.fromC = null; drag.el = null;
+
+  if (!touchMoved) {
+    onCellClick(fromR, fromC);
+    return;
+  }
+  if (target) {
+    const cell = target.closest('.cell');
+    if (cell) {
+      const tr = parseInt(cell.dataset.r), tc = parseInt(cell.dataset.c);
+      if (!boardCells[tr][tc] && !(tr === fromR && tc === fromC))
+        moveTile(fromR, fromC, tr, tc);
+    }
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+function loadEncoding() {
+  setMode('idle');
+  const raw   = document.getElementById('enc-in').value.trim();
+  const errEl = document.getElementById('err');
+  if (!raw) { errEl.textContent = 'Please enter an encoding first.'; return; }
+
+  const { boardTiles, rackLetters, errs } = parseEncoding(raw);
+  errEl.textContent = errs.length ? errs.join(' \u00B7 ') : '';
+
+  for (let r = 0; r < 15; r++) for (let c = 0; c < 15; c++) boardCells[r][c] = null;
+  buildBoard();
+  for (const t of boardTiles) placeTile(t.row, t.col, t.letter, t.isBlank);
+
+  rackTiles = rackLetters;
+  renderRack();
+  updateExport();
+}
+
+function loadExample() {
+  document.getElementById('enc-in').value = EXAMPLE_ENC;
+  loadEncoding();
+}
+
+function clearAll() {
+  setMode('idle');
+  for (let r = 0; r < 15; r++) for (let c = 0; c < 15; c++) boardCells[r][c] = null;
+  rackTiles = [];
+  buildBoard();
+  renderRack();
+  updateExport();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+buildBoard();
+renderRack();
+updateExport();
+</script>
+</body>
+</html>
