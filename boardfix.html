@@ -429,6 +429,43 @@
       color: rgba(196,154,48,0.4);
       margin-left: 6px;
     }
+
+    /* ── Screenshot tip panel ───────────────────────────────── */
+    .tip-panel {
+      border-left: 3px solid rgba(196,154,48,0.28);
+    }
+
+    .tip-steps {
+      margin: 8px 0 10px 22px;
+      font-size: 14px;
+      color: rgba(208,188,122,0.72);
+      line-height: 1.85;
+    }
+    .tip-steps li::marker { color: rgba(196,154,48,0.38); }
+    .tip-steps code {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: rgba(196,154,48,0.65);
+    }
+    .tip-steps strong { color: var(--text); font-weight: bold; }
+
+    .prompt-block {
+      background: rgba(0,0,0,0.32);
+      border: 1px solid rgba(196,154,48,0.14);
+      border-left: 3px solid rgba(196,154,48,0.38);
+      border-radius: 4px;
+      padding: 12px 14px 10px;
+      margin: 10px 0 4px;
+    }
+    .prompt-block pre {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: rgba(208,188,122,0.78);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.65;
+      margin: 0 0 10px;
+    }
   </style>
 </head>
 <body>
@@ -487,6 +524,24 @@
     <div class="btn-row">
       <button class="btn-primary" id="btn-copy" onclick="copyEncoding()">Copy to Clipboard</button>
     </div>
+  </div>
+
+  <!-- Screenshot → AI prompt tip -->
+  <div class="panel tip-panel">
+    <div class="panel-title">Getting an Encoding from a Screenshot</div>
+    <ol class="tip-steps">
+      <li>Take a screenshot of your Scrabble board (include the rack if you want it encoded too).</li>
+      <li>Open any AI assistant that accepts image uploads — Claude, ChatGPT, Gemini, etc.</li>
+      <li>Attach the screenshot and paste the prompt below:</li>
+    </ol>
+    <div class="prompt-block">
+      <pre id="ai-prompt">Examine the Scrabble board image. For every tile on the board, record it as LETTER@COLUMN-ROW where COLUMN is the letter label (A–O) of its column and ROW is the number label (1–15) of its row, separated by a dash. Group tiles line by line by row, listing left to right within each row, separated by commas (including a comma at the end of a line except for the very last tile). Place all tile entries under the heading BOARD:. Then record the player's visible rack tiles left to right on a line beginning with RACK:. Use lowercase for any blank tile on the board; use ? for an unplayed blank in the rack.</pre>
+      <button class="btn-secondary" style="font-size:13px; padding:6px 12px;" onclick="copyPrompt(event)">Copy Prompt</button>
+    </div>
+    <ol class="tip-steps" start="4">
+      <li>The AI will output a <code>BOARD:</code> line and optionally a <code>RACK:</code> line.</li>
+      <li>Paste the result into the <strong>Import Encoding</strong> box at the top of this page and click <strong>Load Board</strong>.</li>
+    </ol>
   </div>
 </div>
 
@@ -1065,6 +1120,25 @@ function clearAll() {
   buildBoard();
   renderRack();
   updateExport();
+}
+
+// ── Prompt copy ───────────────────────────────────────────────────────────────
+
+async function copyPrompt(e) {
+  const text = document.getElementById('ai-prompt').textContent;
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1600);
+  } catch (_) {
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById('ai-prompt'));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
