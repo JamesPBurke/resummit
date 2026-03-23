@@ -517,6 +517,35 @@
       outline: 3px solid var(--gold-bright);
       outline-offset: 2px;
     }
+
+    /* ── Word validation ────────────────────────────────────── */
+    #check-row {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    #check-row.visible { display: flex; }
+
+    #dict-status {
+      font-size: 12px;
+      font-style: italic;
+      color: rgba(196,154,48,0.45);
+    }
+    #dict-status.loaded  { color: rgba(90,180,90,0.7); }
+    #dict-status.error   { color: rgba(240,140,140,0.8); }
+
+    .word-badge {
+      font-size: 13px;
+      font-weight: bold;
+      padding: 0 5px;
+      border-radius: 3px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    .word-badge.valid   { color: #6ecb6e; }
+    .word-badge.invalid { color: #f08080; }
   </style>
 </head>
 <body>
@@ -572,6 +601,10 @@
     <div class="panel-title">Score Preview</div>
     <div class="score-placeholder" id="score-display" aria-live="polite" aria-atomic="true">
       Place tiles on the board to calculate your turn score
+    </div>
+    <div id="check-row">
+      <button class="btn-secondary" id="check-btn" onclick="checkWords()">Check Words</button>
+      <span id="dict-status">loading dictionary…</span>
     </div>
   </div>
 </div>
@@ -1135,6 +1168,48 @@ function scoreWord(tiles) {
   return { score: letterSum * wordMult, wordMult };
 }
 
+// ── Dictionary (ENABLE word list) ────────────────────────────────────────────
+
+let wordSet = null;     // Set<string> once loaded
+let dictState = 'loading'; // 'loading' | 'loaded' | 'error'
+
+async function loadDictionary() {
+  const statusEl = document.getElementById('dict-status');
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    wordSet = new Set(text.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(Boolean));
+    dictState = 'loaded';
+    statusEl.textContent = 'Dictionary ready';
+    statusEl.className = 'loaded';
+    // Enable check button if score rows are already showing
+    const checkBtn = document.getElementById('check-btn');
+    if (checkBtn) checkBtn.disabled = false;
+  } catch {
+    dictState = 'error';
+    statusEl.textContent = 'Dictionary unavailable (offline?)';
+    statusEl.className = 'error';
+    const checkBtn = document.getElementById('check-btn');
+    if (checkBtn) checkBtn.disabled = true;
+  }
+}
+
+function checkWords() {
+  if (!wordSet) return;
+  document.querySelectorAll('#score-display .score-row[data-word]').forEach(row => {
+    const word = row.dataset.word;
+    // Remove any existing badge
+    row.querySelectorAll('.word-badge').forEach(b => b.remove());
+    const valid = wordSet.has(word.toUpperCase());
+    const badge = document.createElement('span');
+    badge.className = `word-badge ${valid ? 'valid' : 'invalid'}`;
+    badge.textContent = valid ? '✓' : '✗';
+    badge.title = valid ? `${word} is valid` : `${word} not in dictionary`;
+    row.appendChild(badge);
+  });
+}
+
 function updateScore() {
   const scoreEl = document.getElementById('score-display');
 
@@ -1154,6 +1229,7 @@ function updateScore() {
   if (newTiles.length === 0) {
     scoreEl.className = 'score-placeholder';
     scoreEl.textContent = 'Place tiles on the board to calculate your turn score';
+    document.getElementById('check-row').classList.remove('visible');
     return;
   }
 
@@ -1166,6 +1242,7 @@ function updateScore() {
     scoreEl.className = 'score-error';
     scoreEl.innerHTML =
       `<span class="score-error-icon">⚠</span><span>${error}</span>`;
+    document.getElementById('check-row').classList.remove('visible');
     return;
   }
 
@@ -1189,6 +1266,7 @@ function updateScore() {
   if (words.length === 0) {
     scoreEl.className = 'score-placeholder';
     scoreEl.textContent = 'Place tiles next to existing letters to form a word';
+    document.getElementById('check-row').classList.remove('visible');
     return;
   }
 
@@ -1218,7 +1296,7 @@ function updateScore() {
   let html = '<div class="score-words">';
   for (const { text, score, wordMult } of wordScores) {
     const mult = wordMult > 1 ? `<span class="score-mult">×${wordMult}</span>` : '';
-    html += `<div class="score-row">
+    html += `<div class="score-row" data-word="${text}">
       <span class="score-word">${text}</span>${mult}
       <span class="score-pts">${score}</span>
     </div>`;
@@ -1232,6 +1310,12 @@ function updateScore() {
   html += '</div><hr class="score-divider">';
   html += `<div class="score-total">Turn score: <strong>${total}</strong></div>`;
   scoreEl.innerHTML = html;
+
+  // Show check-words row; reset any previous badge results
+  const checkRow = document.getElementById('check-row');
+  checkRow.classList.add('visible');
+  const checkBtn = document.getElementById('check-btn');
+  checkBtn.disabled = (dictState === 'loading');
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
@@ -1315,6 +1399,7 @@ function clearAll() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 buildBoard();
+loadDictionary();
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') kbClearSelection();

@@ -535,7 +535,7 @@
       <li>Attach the screenshot and paste the prompt below:</li>
     </ol>
     <div class="prompt-block">
-      <pre id="ai-prompt">Examine the Scrabble board image. For every tile on the board, record it as LETTER@COLUMN-ROW where COLUMN is the letter label (A–O) of its column and ROW is the number label (1–15) of its row, separated by a dash. Group tiles line by line by row, listing left to right within each row, separated by commas (including a comma at the end of a line except for the very last tile). Place all tile entries under the heading BOARD:. Then record the player's visible rack tiles left to right on a line beginning with RACK:. Use lowercase for any blank tile on the board; use ? for an unplayed blank in the rack.</pre>
+      <pre id="ai-prompt">Examine the Scrabble board image. For every tile on the board, record it as LETTER@COLUMN-ROW where COLUMN is the letter label (A–O) of its column and ROW is the number label (1–15) of its row, separated by a dash. List all tiles on a single line separated by commas. Place all tile entries under the heading BOARD:. Then record the player's visible rack tiles left to right on a line beginning with RACK: Use no commas between the rack letters. Use lowercase for any blank tile on the board; use ? for an unplayed blank in the rack.</pre>
       <button class="btn-secondary" style="font-size:13px; padding:6px 12px;" onclick="copyPrompt(event)">Copy Prompt</button>
     </div>
     <ol class="tip-steps" start="4">
