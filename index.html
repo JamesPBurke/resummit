@@ -8,7 +8,10 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --cell: clamp(28px, 5.5vw, 48px);
+      /* Viewport-fit: board always fills but never overflows on portrait mobile.
+         Board width = 15.72×cell + 19px; body side padding = 10px×2 = 20px.
+         So cell = (100vw − 39px) / 15.72 makes board = 100vw − 20px exactly. */
+      --cell: clamp(18px, calc((100vw - 39px) / 15.72), 48px);
       --radius: 6px;
       --gold:        #c49a30;
       --gold-bright: #dab845;
@@ -163,7 +166,7 @@
       justify-content: center;
       background: #0e0b07;
       color: rgba(196,154,48,0.35);
-      font-size: clamp(9px, 1.5vw, 14px);
+      font-size: clamp(7px, calc(var(--cell) * 0.38), 13px);
       font-weight: bold;
       font-family: Georgia, serif;
     }
@@ -516,6 +519,69 @@
     button:focus-visible {
       outline: 3px solid var(--gold-bright);
       outline-offset: 2px;
+    }
+
+    /* ── Mobile portrait ────────────────────────────────────── */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px 8px 20px;
+      }
+
+      h1 {
+        font-size: clamp(16px, 5.5vw, 26px);
+        margin-bottom: 6px;
+        letter-spacing: 3px;
+      }
+
+      .page-nav {
+        margin-bottom: 10px;
+        font-size: 13px;
+      }
+
+      .panel {
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+
+      .panel-title { font-size: 11px; }
+
+      /* Taller touch targets (≥44px) */
+      button {
+        padding: 13px 14px;
+        font-size: 14px;
+        min-height: 44px;
+      }
+
+      .btn-row { gap: 6px; margin-top: 6px; }
+
+      textarea {
+        min-height: 50px;
+        font-size: 13px;
+      }
+
+      .hint { font-size: 11px; margin-top: 5px; }
+
+      .board-scroll { margin-bottom: 8px; }
+
+      .rack-bar {
+        gap: 3px;
+        padding: 6px 6px;
+        min-height: calc(var(--cell) + 18px);
+      }
+
+      .rack-tile {
+        width: calc(var(--cell) + 4px);
+        height: calc(var(--cell) + 4px);
+      }
+
+      .score-word { font-size: 15px; }
+      .score-pts  { font-size: 15px; min-width: 26px; }
+      .score-row  { font-size: 14px; }
+      .score-mult { font-size: 11px; }
+      .score-total strong { font-size: 22px; }
+      .score-placeholder { font-size: 13px; }
+      .empty-hint        { font-size: 13px; }
+      .error-msg         { font-size: 12px; }
     }
 
     /* ── Word validation ────────────────────────────────────── */
